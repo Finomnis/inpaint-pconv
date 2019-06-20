@@ -1,2 +1,4 @@
 /.idea
 /masks/generated
+
+__pycache__/
