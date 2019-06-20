@@ -1,0 +1,3 @@
+[submodule "ext/partialconv"]
+	path = ext/partialconv
+	url = git@github.com:NVIDIA/partialconv.git
