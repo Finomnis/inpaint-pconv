@@ -18,7 +18,6 @@ class MaskedImageDataset(Dataset):
 
     @staticmethod
     def unnormalize(x, is_mask=False):
-
         x = x.detach().cpu()
         while len(x.size()) > 3:
             x = x.squeeze(0)
@@ -55,7 +54,8 @@ class MaskedImageDataset(Dataset):
     def __getitem__(self, index):
         img = Image.open(self.imgs[index]).convert('RGB')
 
-        crop_size = min(img.size)
+        # Random crop/resize image to 512x512
+        crop_size = min(512, min(img.size))
         img = transforms.RandomCrop((crop_size, crop_size))(img)
         if crop_size < 512:
             img = transforms.Resize((512, 512))(img)
