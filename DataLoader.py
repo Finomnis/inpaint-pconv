@@ -18,6 +18,8 @@ class MaskedImageDataset(Dataset):
 
     @staticmethod
     def unnormalize(x, is_mask=False):
+
+        x = x.detach().cpu()
         while len(x.size()) > 3:
             x = x.squeeze(0)
 
@@ -25,7 +27,7 @@ class MaskedImageDataset(Dataset):
 
         if not is_mask:
             x = x * torch.Tensor(MaskedImageDataset.stddev) + torch.Tensor(MaskedImageDataset.mean)
-        x = x.detach().cpu().numpy()
+        x = x.detach().numpy()
         x = (x*255).round().clip(0, 255).astype(np.uint8)
         return x
 

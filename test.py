@@ -1,5 +1,5 @@
 from DataLoader import MaskedImageDataset
-from Models import UnetGenerator
+from Models import UnetGenerator, init_net
 
 from torch.utils.data import DataLoader
 
@@ -7,23 +7,23 @@ import matplotlib.pyplot as plt
 
 
 def main():
-    dataset = MaskedImageDataset('/home/martin/Downloads/test_large')
-    dataloader = DataLoader(dataset)
+    dataset = MaskedImageDataset('../datasets/places2/test_large')
+    dataloader = DataLoader(dataset, shuffle=True)
 
-    print(len(dataset.imgs))
-    print(len(dataset.masks))
+    # print(len(dataset.imgs))
+    # print(len(dataset.masks))
 
     it = iter(dataloader)
 
-    print(next(it))
+    # print(next(it))
 
-    model = UnetGenerator(3, 3)
+    model = init_net(UnetGenerator(3, 3))
 
     img, img_gt, mask = next(it)
 
     result, result_mask = model(img, mask)
 
-    plt.figure('Stencil')
+    plt.figure('Stencil', figsize=(18, 9))
     plt.subplot(2, 3, 1)
     plt.imshow(MaskedImageDataset.to_img(img))
     plt.subplot(2, 3, 2)

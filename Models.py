@@ -5,6 +5,14 @@ import torch
 from ext.partialconv.models.partialconv2d import PartialConv2d
 from ext.partialconvtranspose2d import PartialConvTranspose2d
 
+import warnings
+import os
+from utils.add_path import add_path
+
+with add_path(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ext', 'pix2pix')):
+    from models.networks import init_weights
+
+
 # Important:
 # All layers return both data and mask
 
@@ -126,11 +134,26 @@ class UnetSkipConnectionBlock(nn.Module):
     def forward(self, x_in, mask_in):
         x_out, mask_out = x_in, mask_in
         for layer in self.model:
-            print(layer)
             x_out, mask_out = layer(x_out, mask_out)
-            print(x_out.shape, mask_out.shape)
 
         if self.outermost:
             return x_out, mask_out
         else:
             return torch.cat([x_in, x_out], 1), torch.cat([mask_in, mask_out], 1)
+
+
+def init_net(net, init_type='kaiming', init_gain=0.02):
+
+    # Get number of cuda devices
+    gpu_ids = []
+    if torch.cuda.is_available():
+        gpu_ids = list(range(torch.cuda.device_count()))
+
+    if len(gpu_ids) > 0:
+        net.to(gpu_ids[0])
+        net = torch.nn.DataParallel(net, gpu_ids)  # multi-GPUs
+    else:
+        warnings.warn('No GPU detected! Network will run on CPU!')
+
+    init_weights(net, init_type, init_gain)
+    return net

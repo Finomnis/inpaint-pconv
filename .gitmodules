@@ -1,3 +1,6 @@
 [submodule "ext/partialconv"]
 	path = ext/partialconv
 	url = git@github.com:NVIDIA/partialconv.git
+[submodule "ext/pix2pix"]
+	path = ext/pix2pix
+	url = git@github.com:Finomnis/pytorch-CycleGAN-and-pix2pix.git
