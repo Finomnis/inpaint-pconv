@@ -10,20 +10,33 @@ import os
 import glob
 import random
 
+
 class MaskedImageDataset(Dataset):
 
     mean = [0.485, 0.456, 0.406]
     stddev = [0.229, 0.224, 0.225]
 
     @staticmethod
-    def to_img(x):
-        x.transpose_(0, 2)
-        x = x * torch.Tensor(MaskedImageDataset.stddev) + torch.Tensor(MaskedImageDataset.mean)
+    def unnormalize(x, is_mask=False):
+        while len(x.size()) > 3:
+            x = x.squeeze(0)
 
-        if x.size(2) == 3:
-            img = Image.fromarray(x.cpu().detach().numpy(), 'RGB')
+        x = x.permute(1, 2, 0)
+
+        if not is_mask:
+            x = x * torch.Tensor(MaskedImageDataset.stddev) + torch.Tensor(MaskedImageDataset.mean)
+        x = x.detach().cpu().numpy()
+        x = (x*255).round().clip(0, 255).astype(np.uint8)
+        return x
+
+    @staticmethod
+    def to_img(x, is_mask=False):
+        x = MaskedImageDataset.unnormalize(x, is_mask=is_mask)
+
+        if x.shape[2] == 3:
+            img = Image.fromarray(x, 'RGB')
         else:
-            img = Image.fromarray(x.cpu().detach().numpy(), 'L')
+            img = Image.fromarray(x, 'L')
 
         return img
 
@@ -50,7 +63,7 @@ class MaskedImageDataset(Dataset):
         mask = Image.open(random.choice(self.masks)).convert('RGB')
         mask = self.mask_transform(mask)
 
-        return img, mask
+        return img*mask, img, mask
 
     def __len__(self):
         return len(self.imgs)
