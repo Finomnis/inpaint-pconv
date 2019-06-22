@@ -50,6 +50,10 @@ class MaskedImageDataset(Dataset):
         self.img_transform = transforms.Compose([transforms.ToTensor(),
                                                  transforms.Normalize(MaskedImageDataset.mean, MaskedImageDataset.stddev)])
         self.mask_transform = transforms.ToTensor()
+        self.random_mask_flips = transforms.Compose([
+            transforms.RandomVerticalFlip(),
+            transforms.RandomHorizontalFlip()
+        ])
 
     def __getitem__(self, index, mask_id=None):
         img = Image.open(self.imgs[index]).convert('RGB')
@@ -66,6 +70,7 @@ class MaskedImageDataset(Dataset):
             mask = Image.open(random.choice(self.masks)).convert('RGB')
         else:
             mask = Image.open(self.masks[mask_id]).convert('RGB')
+        mask = self.random_mask_flips(mask)
         mask = self.mask_transform(mask)
 
         return img*mask, img, mask
