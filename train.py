@@ -31,7 +31,7 @@ def main():
     parser.add_argument("--fine_tune", action="store_true")
     parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("--log_interval", type=int, default=100)
-    parser.add_argument("--save_interval", type=int, default=5000)
+    parser.add_argument("--save_interval", type=int, default=500)
     args = parser.parse_args()
 
     print(args)
@@ -41,7 +41,7 @@ def main():
     if not os.path.isdir(model_save_path):
         os.makedirs(model_save_path)
 
-    model = Models.PConvInfilNet(model_save_path, load_weights='train' if args.continue_train else None, fine_tune=args.fine_tune)
+    model = Models.PConvInfilNet(model_save_path, load_weights='latest' if args.continue_train else None, fine_tune=args.fine_tune)
 
     # Open Datasets
     train_dataset = DataLoaders.MaskedImageDataset(args.img_path, mask_path=args.mask_path)

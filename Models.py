@@ -64,7 +64,7 @@ class PartialTanh(nn.Tanh):
 class UnetGenerator(nn.Module):
     """Create a Unet-based generator"""
 
-    def __init__(self, input_nc, output_nc, num_downs=8, ngf=64, fine_tune=False):
+    def __init__(self, input_nc, output_nc, num_downs=8, ngf=64, fine_tune=False, parameter_values=None):
         """Construct a Unet generator
         Parameters:
             input_nc (int)  -- the number of channels in input images
@@ -85,6 +85,9 @@ class UnetGenerator(nn.Module):
         unet_block = UnetSkipConnectionBlock(ngf * 2, ngf * 4, submodule=unet_block, fine_tune=fine_tune)
         unet_block = UnetSkipConnectionBlock(ngf, ngf * 2, submodule=unet_block, fine_tune=fine_tune)
         self.model = UnetSkipConnectionBlock(output_nc, ngf, submodule=unet_block, outermost=True, fine_tune=fine_tune)  # add the outermost layer
+
+        if parameter_values:
+            self.load_state_dict(parameter_values)
 
     def forward(self, inp, mask):
         """Standard forward"""
@@ -179,18 +182,12 @@ def endless_iterator(generator):
             yield i
 
 
-class PConvInfilNet():
+class PConvInfilNet:
 
     def __init__(self, model_save_path, load_weights='best', fine_tune=False):
 
         self.model_save_path = model_save_path
         self.iteration = 0
-
-        if load_weights:
-            self.model = init_net(UnetGenerator(3, 3, num_downs=8, ngf=64, fine_tune=fine_tune), init_type=None)
-            self.load_params(load_weights)
-        else:
-            self.model = init_net(UnetGenerator(3, 3, num_downs=8, ngf=64, fine_tune=fine_tune), init_type='kaiming')
 
         # Training parameters
         self.fine_tune = fine_tune
@@ -201,18 +198,37 @@ class PConvInfilNet():
         self.log_interval = None
         self.save_interval = None
         self.epoch_size = None
+        self.best_val = None
 
+        if load_weights:
+            state_dict = self._load_params(load_weights)
+            self.model = init_net(UnetGenerator(3, 3, num_downs=8, ngf=64, fine_tune=fine_tune,
+                                                parameter_values=state_dict), init_type=None)
+        else:
+            self.model = init_net(UnetGenerator(3, 3, num_downs=8, ngf=64, fine_tune=fine_tune), init_type='kaiming')
 
-    def load_params(self, network_type):
-        save_dict = torch.load(os.path.join(self.model_save_path, 'latest_net_' + network_type + '.pth'))
-        self.model.load_state_dict(save_dict['network_params'])
+    def _load_params(self, network_type):
+        print('Loading model from \'' + network_type + '\' ...')
+        save_dict = torch.load(os.path.join(self.model_save_path, 'net_' + network_type + '.pth'))
         self.iteration = save_dict['iteration']
+        self.best_val = save_dict['best_val']
+
+        return save_dict['network_params']
 
     def save_params(self, network_type):
+        print('Saving model to \'' + network_type + '\' ...')
         save_dict = dict()
-        save_dict['network_params'] = self.model.state_dict()
         save_dict['iteration'] = self.iteration
-        torch.save(os.path.join(self.model_save_path, 'latest_net_' + network_type + '.pth'))
+        save_dict['best_val'] = self.best_val
+        print(save_dict)
+
+        # Load state dict and move it to cpu
+        state_dict = self.model.module.state_dict()
+        cpu_dev = torch.device('cpu')
+        state_dict_cpu = {key: val.to(cpu_dev) for key, val in state_dict.items()}
+        save_dict['network_params'] = state_dict_cpu
+
+        torch.save(save_dict, os.path.join(self.model_save_path, 'net_' + network_type + '.pth'))
 
     def get_params(self):
         return self.model.parameters()
@@ -236,8 +252,9 @@ class PConvInfilNet():
         print(' - epoch size:    ', self.epoch_size)
         print(' - log interval:  ', self.log_interval)
         print(' - save interval: ', self.save_interval)
-
-        print(vis_data[0].size())
+        print('=== State ===')
+        print(' current iteration:', self.iteration)
+        print(' best network loss:', self.best_val)
 
         self.logger = Logger.Logger(self.model_save_path)
 
@@ -262,15 +279,32 @@ class PConvInfilNet():
         t4 = time.perf_counter()
 
         # logs
-        batch_size =  img_real.size(0)
+        batch_size = img_real.size(0)
+        time_taken = (t4-t0)/batch_size
         old_iteration = self.iteration
         self.iteration = old_iteration + batch_size
         if self.iteration % self.log_interval <= old_iteration % self.log_interval:
-            self.logger.log_loss(self.iteration, self.epoch_size, loss_dict, (t4-t0) / batch_size, self.fine_tune)
-            self.logger.update_imgs(img_real, img_fake, img_comp, mask)
+            self.write_logs(loss_dict, time_taken, img_real, img_fake, img_comp, mask)
 
         if self.iteration % self.save_interval <= old_iteration % self.save_interval:
-            self.save_all()
+            self.save_params('latest')
+
+    def write_logs(self, loss_dict, time_taken, img_real, img_fake, img_comp, mask):
+
+        # Generate validation loss
+        with torch.no_grad():
+            val_in, val_real, val_mask = next(self.val_iter)
+            val_fake, val_comp, val_mask_fake = self.forward(val_in, val_mask)
+            loss_dict_val = self.loss_func(val_real, val_fake, val_comp, val_mask)
+            loss_val = loss_dict_val['total'].item()
+
+        # Store best of validation set, to prevent overfitting
+        if self.best_val is None or self.best_val > loss_val:
+            self.best_val = loss_val
+            self.save_params('best')
+
+        self.logger.log_loss(self.iteration, self.epoch_size, loss_dict, loss_dict_val, time_taken, self.fine_tune)
+        self.logger.update_imgs(img_real, img_fake, img_comp, mask, val_real, val_fake, val_comp, val_mask)
 
     def forward(self, img, mask):
         return self.model(img, mask)
