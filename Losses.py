@@ -148,20 +148,23 @@ class InpaintLoss(nn.Module):
         vgg_fake = self.vgg_extractor(img_fake)
         vgg_comp = self.vgg_extractor(img_comp)
 
-        return {
+        loss_dict = {
             'valid': 1.0 * self.l_valid(img_real, img_fake, mask),
             'hole': 6.0 * self.l_hole(img_real, img_fake, mask),
             'perceptual': 0.05 * self.l_perceptual(vgg_real, vgg_fake, vgg_comp),
             'style': 120.0 * self.l_style(vgg_real, vgg_fake, vgg_comp),
-            'tv': 0.1 * self.l_tv(img_comp, mask)
+            'tv': 0.1 * self.l_tv(img_comp, mask),
         }
+
+        loss_dict['total'] = torch.stack(tuple(loss_dict.values())).sum()
+        return loss_dict
 
 
 
 # For testing purposes
 def _main():
 
-    from DataLoader import MaskedImageDataset
+    from DataLoaders import MaskedImageDataset
     from torch.utils.data import DataLoader
     dataset = MaskedImageDataset('../datasets/places2/test_large')
     dataloader = DataLoader(dataset)
@@ -196,18 +199,13 @@ def _main():
     print(loss(img_gt, img_out, img_comp, mask))
     print(loss(img_gt, img_out, img_comp, mask))
 
-    loss_result = loss(img_gt, img_out, img_comp, mask)
-    print(loss_result)
-    print(loss_result.values())
-    print(tuple(loss_result.values()))
-    print(torch.stack(tuple(loss_result.values())))
-    print(torch.stack(tuple(loss_result.values())).sum())
+    loss_dict = loss(img_gt, img_out, img_comp, mask)
+    print(loss_dict)
 
-    total_loss = torch.stack(tuple(loss_result.values())).sum()
-    print(total_loss)
+    print(loss_dict['total'])
 
     from utils.dot import make_dot
-    make_dot(total_loss).render('losses_graph', cleanup=True, view=True)
+    make_dot(loss_dict['total']).render('losses_graph', cleanup=True, view=True)
 
 
 if __name__ == "__main__":
