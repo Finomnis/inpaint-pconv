@@ -1,4 +1,5 @@
-/.idea
-/masks/generated
+/.idea/
+/masks/generated/
+/checkpoints/
 
 __pycache__/
