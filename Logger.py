@@ -44,7 +44,7 @@ html_file = """
             document.getElementById('val_'+img_id).src='val_'+img_id+".png?t="+date;
             document.getElementById('vis_'+img_id).src='vis/img_'+img_id+"_0.png?t="+date;
         }
-        setTimeout(arguments.callee, 10000);
+        setTimeout(arguments.callee, 30000);
     })();
     </script>
     <!-- page content -->
