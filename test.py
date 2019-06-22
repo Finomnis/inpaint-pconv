@@ -1,4 +1,4 @@
-from DataLoader import MaskedImageDataset
+from DataLoaders import MaskedImageDataset
 from Models import UnetGenerator, init_net
 
 from torch.utils.data import DataLoader
