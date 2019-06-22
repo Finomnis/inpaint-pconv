@@ -118,7 +118,8 @@ class UnetSkipConnectionBlock(nn.Module):
                                             multi_channel=True,
                                             return_mask=True)
             down = [downconv]
-            up = [uprelu, upconv, PartialTanh()]
+            #up = [uprelu, upconv, PartialTanh()]
+            up = [uprelu, upconv]
             model = down + [submodule] + up
         elif innermost:
             upconv = PartialConvTranspose2d(inner_nc, outer_nc,
