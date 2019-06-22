@@ -32,6 +32,8 @@ def main():
     parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("--log_interval", type=int, default=100)
     parser.add_argument("--save_interval", type=int, default=500)
+    parser.add_argument("--vis_interval", type=int, default=100)
+    parser.add_argument("--stage_interval", type=int, default=100)
     args = parser.parse_args()
 
     print(args)
@@ -63,7 +65,9 @@ def main():
                               val_dataloader,
                               val_dataset.get_examples(args.batch_size),
                               args.log_interval,
-                              args.save_interval)
+                              args.save_interval,
+                              args.vis_interval,
+                              args.stage_interval)
 
     while True:
         model.train_step()

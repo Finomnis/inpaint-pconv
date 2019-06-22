@@ -234,7 +234,7 @@ class PConvInfilNet:
     def get_params(self):
         return self.model.parameters()
 
-    def set_training_params(self, optim, loss_func, train_data, val_data, vis_data, log_interval, save_interval):
+    def set_training_params(self, optim, loss_func, train_data, val_data, vis_data, log_interval, save_interval, vis_interval, stage_interval):
         self.optim = optim
         self.loss_func = loss_func
         self.train_data = train_data
@@ -242,6 +242,8 @@ class PConvInfilNet:
         self.vis_data = vis_data
         self.log_interval = log_interval
         self.save_interval = save_interval
+        self.vis_interval = vis_interval
+        self.stage_interval = stage_interval
         self.epoch_size = len(train_data)
 
         self.train_iter = endless_iterator(self.train_data)
@@ -250,9 +252,11 @@ class PConvInfilNet:
         print('=== Optimizer ===')
         print(self.optim)
         print()
-        print(' - epoch size:    ', self.epoch_size)
-        print(' - log interval:  ', self.log_interval)
-        print(' - save interval: ', self.save_interval)
+        print(' - epoch size:         ', self.epoch_size)
+        print(' - log interval:       ', self.log_interval)
+        print(' - save interval:      ', self.save_interval)
+        print(' - visualize interval: ', self.vis_interval)
+        print(' - stage interval:     ', self.stage_interval)
         print('=== State ===')
         print(' current iteration:', self.iteration)
         print(' best network loss:', self.best_val)
@@ -290,6 +294,12 @@ class PConvInfilNet:
         if self.iteration % self.save_interval <= old_iteration % self.save_interval:
             self.save_params('latest')
 
+        if self.iteration % self.vis_interval <= old_iteration % self.vis_interval:
+            self.write_visualization()
+
+        if self.iteration % self.stage_interval <= old_iteration % self.stage_interval:
+            self.save_params(str(self.iteration))
+
     def write_logs(self, loss_dict, time_taken, img_real, img_fake, img_comp, mask):
 
         # Generate validation loss
@@ -306,6 +316,13 @@ class PConvInfilNet:
 
         self.logger.log_loss(self.iteration, self.epoch_size, loss_dict, loss_dict_val, time_taken, self.fine_tune)
         self.logger.update_imgs(img_real, img_fake, img_comp, mask, val_real, val_fake, val_comp, val_mask)
+
+    def write_visualization(self):
+        with torch.no_grad():
+            img_real, img_mask = self.vis_data
+            img_in = img_real * img_mask
+            img_fake, img_comp, img_mask_fake = self.forward(img_in, img_mask)
+            self.logger.update_visualization(self.iteration, img_real, img_fake, img_comp, img_mask)
 
     def forward(self, img, mask):
         return self.model(img, mask)

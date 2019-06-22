@@ -74,11 +74,26 @@ class MaskedImageDataset(Dataset):
         return len(self.imgs)
 
     def get_examples(self, num):
+        rng = random.Random(len(self.imgs))
+
         example_imgs = list()
         example_masks = list()
 
         for i in range(num):
-            comb, img, mask = self.__getitem__(i, i)
+
+            img = Image.open(rng.choice(self.imgs)).convert('RGB')
+
+            # Center crop/resize image to 512x512
+            crop_size = min(512, min(img.size))
+            img = transforms.CenterCrop((crop_size, crop_size))(img)
+            if crop_size < 512:
+                img = transforms.Resize((512, 512))(img)
+
+            img = self.img_transform(img)
+
+            mask = Image.open(rng.choice(self.masks)).convert('RGB')
+            mask = self.mask_transform(mask)
+
             example_imgs.append(img)
             example_masks.append(mask)
 
