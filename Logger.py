@@ -3,6 +3,7 @@ import time
 
 import DataLoaders
 
+
 class Logger:
     def __init__(self, save_dir):
         self.path = save_dir
@@ -11,7 +12,7 @@ class Logger:
 
         self.assert_web_initialized()
 
-    def log_loss(self, iteration, epoch_size, loss_dict, time_taken, fine_tune):
+    def log_loss(self, iteration, epoch_size, loss_dict, loss_dict_val, time_taken, fine_tune):
         epoch, epoch_iteration = divmod(iteration, epoch_size)
         epoch += 1
 
@@ -19,7 +20,9 @@ class Logger:
         msg += 'time: ' + '{:.3f}'.format(time_taken) + ', fine_tune: ' + str(fine_tune) + ')'
 
         for key in sorted(loss_dict):
-            msg += ' ' + key + ': ' + '{:.3f}'.format(loss_dict[key])
+            msg += ' train_' + key + ': ' + '{:.3f}'.format(loss_dict[key].item())
+        for key in sorted(loss_dict_val):
+            msg += ' val_' + key + ': ' + '{:.3f}'.format(loss_dict_val[key].item())
 
         self.log_loss_msg(msg)
 
@@ -32,7 +35,7 @@ class Logger:
         if not os.path.isdir(self.web_path):
             os.makedirs(self.web_path)
 
-    def update_imgs(self, img_real, img_fake, img_comp, mask):
+    def update_imgs(self, img_real, img_fake, img_comp, mask, val_real, val_fake, val_comp, val_mask):
         img_real = DataLoaders.MaskedImageDataset.to_img(img_real[0])
         img_fake = DataLoaders.MaskedImageDataset.to_img(img_fake[0])
         img_comp = DataLoaders.MaskedImageDataset.to_img(img_comp[0])
@@ -42,4 +45,14 @@ class Logger:
         img_fake.save(os.path.join(self.web_path, 'train_fake.png'))
         img_comp.save(os.path.join(self.web_path, 'train_comp.png'))
         mask.save(os.path.join(self.web_path, 'train_mask.png'))
+
+        val_real = DataLoaders.MaskedImageDataset.to_img(val_real[0])
+        val_fake = DataLoaders.MaskedImageDataset.to_img(val_fake[0])
+        val_comp = DataLoaders.MaskedImageDataset.to_img(val_comp[0])
+        val_mask = DataLoaders.MaskedImageDataset.to_img(val_mask[0])
+
+        val_real.save(os.path.join(self.web_path, 'val_real.png'))
+        val_fake.save(os.path.join(self.web_path, 'val_fake.png'))
+        val_comp.save(os.path.join(self.web_path, 'val_comp.png'))
+        val_mask.save(os.path.join(self.web_path, 'val_mask.png'))
 
