@@ -51,7 +51,7 @@ class MaskedImageDataset(Dataset):
                                                  transforms.Normalize(MaskedImageDataset.mean, MaskedImageDataset.stddev)])
         self.mask_transform = transforms.ToTensor()
 
-    def __getitem__(self, index):
+    def __getitem__(self, index, mask_id=None):
         img = Image.open(self.imgs[index]).convert('RGB')
 
         # Random crop/resize image to 512x512
@@ -62,10 +62,24 @@ class MaskedImageDataset(Dataset):
 
         img = self.img_transform(img)
 
-        mask = Image.open(random.choice(self.masks)).convert('RGB')
+        if mask_id is None:
+            mask = Image.open(random.choice(self.masks)).convert('RGB')
+        else:
+            mask = Image.open(self.masks[mask_id]).convert('RGB')
         mask = self.mask_transform(mask)
 
         return img*mask, img, mask
 
     def __len__(self):
         return len(self.imgs)
+
+    def get_examples(self, num):
+        example_imgs = list()
+        example_masks = list()
+
+        for i in range(num):
+            comb, img, mask = self.__getitem__(i, i)
+            example_imgs.append(img)
+            example_masks.append(mask)
+
+        return torch.stack(example_imgs), torch.stack(example_masks)
