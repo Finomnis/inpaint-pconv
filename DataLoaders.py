@@ -44,8 +44,11 @@ class MaskedImageDataset(Dataset):
     def __init__(self, img_path, mask_path=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'masks', 'generated')):
         super(MaskedImageDataset, self).__init__()
 
-        self.imgs = glob.glob(img_path + '**/*.jpg', recursive=True)
-        self.masks = glob.glob(mask_path + '**/*.png')
+        print('Loading dataset \'' + img_path + '\', masks \'' + mask_path + '\' ...')
+
+        self.imgs = glob.glob(os.path.join(img_path, '**/*.jpg'), recursive=True)
+        self.masks = glob.glob(os.path.join(mask_path, '**/*.png'), recursive=True)
+        print("   ... opened " + str(len(self.imgs)) + " images with " + str(len(self.masks)) + " masks.")
 
         self.img_transform = transforms.Compose([transforms.ToTensor(),
                                                  transforms.Normalize(MaskedImageDataset.mean, MaskedImageDataset.stddev)])
