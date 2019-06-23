@@ -263,6 +263,11 @@ class PConvInfilNet:
 
         self.logger = Logger.Logger(self.model_save_path)
 
+
+    @staticmethod
+    def collect_loss(loss_dict):
+        return {key: val.sum() for key, val in loss_dict.items()}
+
     def train_step(self):
         t0 = time.perf_counter()
         img_in, img_real, mask = next(self.train_iter)
@@ -273,9 +278,7 @@ class PConvInfilNet:
 
         # loss
         t2 = time.perf_counter()
-        loss_dict = self.loss_func(img_real, img_fake, img_comp, mask)
-        # Merge potential multi-gpu
-        loss_dict = {key: val.sum() for key, val in loss_dict.items()}
+        loss_dict = self.collect_loss(self.loss_func(img_real, img_fake, img_comp, mask))
         loss = loss_dict['total']
 
         # optimize
@@ -308,7 +311,7 @@ class PConvInfilNet:
         with torch.no_grad():
             val_in, val_real, val_mask = next(self.val_iter)
             val_fake, val_comp, val_mask_fake = self.forward(val_in, val_mask)
-            loss_dict_val = self.loss_func(val_real, val_fake, val_comp, val_mask)
+            loss_dict_val = self.collect_loss(self.loss_func(val_real, val_fake, val_comp, val_mask))
             loss_val = loss_dict_val['total'].item()
 
         # Store best of validation set, to prevent overfitting
