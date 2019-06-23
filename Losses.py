@@ -149,11 +149,11 @@ class InpaintLoss(nn.Module):
         vgg_comp = self.vgg_extractor(img_comp)
 
         loss_dict = {
-            'valid': 1.0 * self.l_valid(img_real, img_fake, mask),
-            'hole': 6.0 * self.l_hole(img_real, img_fake, mask),
-            'perceptual': 0.05 * self.l_perceptual(vgg_real, vgg_fake, vgg_comp),
-            'style': 120.0 * self.l_style(vgg_real, vgg_fake, vgg_comp),
-            'tv': 0.1 * self.l_tv(img_comp, mask),
+            'valid': 1.0 * self.l_valid(img_real, img_fake, mask).sum(),
+            'hole': 6.0 * self.l_hole(img_real, img_fake, mask).sum(),
+            'perceptual': 0.05 * self.l_perceptual(vgg_real, vgg_fake, vgg_comp).sum(),
+            'style': 120.0 * self.l_style(vgg_real, vgg_fake, vgg_comp).sum(),
+            'tv': 0.1 * self.l_tv(img_comp, mask).sum(),
         }
 
         loss_dict['total'] = torch.stack(tuple(loss_dict.values())).sum()
