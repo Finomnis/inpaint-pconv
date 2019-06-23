@@ -244,7 +244,7 @@ class PConvInfilNet:
         self.save_interval = save_interval
         self.vis_interval = vis_interval
         self.stage_interval = stage_interval
-        self.epoch_size = len(train_data)
+        self.epoch_size = len(train_data.dataset)
 
         self.train_iter = endless_iterator(self.train_data)
         self.val_iter = endless_iterator(self.val_data)
