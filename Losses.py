@@ -15,11 +15,11 @@ class VGGExtractor(nn.Module):
             param.requires_grad = False
 
         # extract the necessary layers
-        self.stages = [
+        self.stages = nn.Sequential(
             self.vgg.features[0:5],
             self.vgg.features[5:10],
             self.vgg.features[10:17]
-        ]
+        )
 
     def forward(self, img):
         results = list()
