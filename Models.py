@@ -274,6 +274,8 @@ class PConvInfilNet:
         # loss
         t2 = time.perf_counter()
         loss_dict = self.loss_func(img_real, img_fake, img_comp, mask)
+        # Merge potential multi-gpu
+        loss_dict = {key: val.sum() for key, val in loss_dict.items()}
         loss = loss_dict['total']
 
         # optimize
