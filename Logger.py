@@ -56,6 +56,8 @@ class Logger:
     def __init__(self, save_dir):
         self.path = save_dir
         self.log_loss_msg('================ Training Loss (' + time.ctime() + ') ================')
+        self.log_info_msg('')
+        self.log_info_msg('================ Training Info (' + time.ctime() + ') ================')
         self.web_path = os.path.join(self.path, 'web')
         self.vis_path = os.path.join(self.web_path, 'vis')
 
@@ -74,6 +76,12 @@ class Logger:
             msg += ' val_' + key + ': ' + '{:.3f}'.format(loss_dict_val[key].item())
 
         self.log_loss_msg(msg)
+
+    def log_info_msg(self, *args):
+        msg = " ".join([str(arg) for arg in args])
+        print(msg)
+        with open(os.path.join(self.path, 'info_log.txt'), 'a') as fil:
+            fil.write(msg+'\n')
 
     def log_loss_msg(self, msg):
         print(msg)

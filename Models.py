@@ -221,7 +221,7 @@ class PConvInfilNet:
         save_dict = dict()
         save_dict['iteration'] = self.iteration
         save_dict['best_val'] = self.best_val
-        print(save_dict)
+        # print(save_dict)
 
         # Load state dict and move it to cpu
         state_dict = self.model.module.state_dict()
@@ -249,19 +249,22 @@ class PConvInfilNet:
         self.train_iter = endless_iterator(self.train_data)
         self.val_iter = endless_iterator(self.val_data)
 
-        print('=== Optimizer ===')
-        print(self.optim)
-        print()
-        print(' - epoch size:         ', self.epoch_size)
-        print(' - log interval:       ', self.log_interval)
-        print(' - save interval:      ', self.save_interval)
-        print(' - visualize interval: ', self.vis_interval)
-        print(' - stage interval:     ', self.stage_interval)
-        print('=== State ===')
-        print(' current iteration:', self.iteration)
-        print(' best network loss:', self.best_val)
-
         self.logger = Logger.Logger(self.model_save_path)
+
+        self.logger.log_info_msg('=== Optimizer ===')
+        self.logger.log_info_msg(self.optim)
+        self.logger.log_info_msg()
+        self.logger.log_info_msg(' - epoch size:         ', self.epoch_size)
+        self.logger.log_info_msg(' - log interval:       ', self.log_interval)
+        self.logger.log_info_msg(' - save interval:      ', self.save_interval)
+        self.logger.log_info_msg(' - visualize interval: ', self.vis_interval)
+        self.logger.log_info_msg(' - stage interval:     ', self.stage_interval)
+        self.logger.log_info_msg('')
+        self.logger.log_info_msg('=== State ===')
+        self.logger.log_info_msg(' current iteration:', self.iteration)
+        self.logger.log_info_msg(' best network loss:', self.best_val)
+        self.logger.log_info_msg()
+
 
 
     @staticmethod
@@ -314,13 +317,13 @@ class PConvInfilNet:
             loss_dict_val = self.collect_loss(self.loss_func(val_real, val_fake, val_comp, val_mask))
             loss_val = loss_dict_val['total'].item()
 
+        self.logger.log_loss(self.iteration, self.epoch_size, loss_dict, loss_dict_val, time_taken, self.fine_tune)
+        self.logger.update_imgs(img_real, img_fake, img_comp, mask, val_real, val_fake, val_comp, val_mask)
+
         # Store best of validation set, to prevent overfitting
         if self.best_val is None or self.best_val > loss_val:
             self.best_val = loss_val
             self.save_params('best')
-
-        self.logger.log_loss(self.iteration, self.epoch_size, loss_dict, loss_dict_val, time_taken, self.fine_tune)
-        self.logger.update_imgs(img_real, img_fake, img_comp, mask, val_real, val_fake, val_comp, val_mask)
 
     def write_visualization(self):
         with torch.no_grad():

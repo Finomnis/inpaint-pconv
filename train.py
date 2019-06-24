@@ -36,8 +36,6 @@ def main():
     parser.add_argument("--stage_interval", type=int, default=50000)
     args = parser.parse_args()
 
-    print(args)
-
     # Create Model
     model_save_path = os.path.join(args.checkpoint_dir, args.model_name)
     if not os.path.isdir(model_save_path):
@@ -68,6 +66,10 @@ def main():
                               args.save_interval,
                               args.vis_interval,
                               args.stage_interval)
+
+    # Log settings
+    model.logger.log_info_msg("=== Starting training ===")
+    model.logger.log_info_msg(args)
 
     while True:
         model.train_step()
