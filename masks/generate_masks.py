@@ -6,7 +6,7 @@ import random
 import math
 
 import numpy as np
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 from PIL import Image, ImageDraw
 from scipy.ndimage import morphology
@@ -204,17 +204,19 @@ def generate_random_paths(size_x, size_y):
             draw.line(line_data, fill=1)
             yield img
 
+
 def generate_random_dots(size_x, size_y):
     img = Image.new('1', size=(size_x, size_y), color=0)
     pixels = img.load()
 
-    num_dots = random.randint(1, size_x*size_y // 1000)
+    num_dots = random.randint(1, size_x*size_y // 2000)
     for _ in range(num_dots):
         x = random.randrange(size_x)
         y = random.randrange(size_y)
-        pixels[x,y] = 1
+        pixels[x, y] = 1
 
     return img
+
 
 def main():
     parser = argparse.ArgumentParser(description='Creates a number of masks.')
@@ -241,18 +243,24 @@ def main():
             random_dots_stencil = generate_random_stencil(min(args.out_size)//20)
             random_dots_mask = morphology.binary_dilation(random_dots, structure=random_dots_stencil)
             mask = mask | random_dots_mask
+            if random.choice((True, False)):
+                random_dots = generate_random_dots(args.out_size[0], args.out_size[1])
+                random_dots_stencil = generate_random_stencil(min(args.out_size)//200)
+                random_dots_mask = morphology.binary_dilation(random_dots, structure=random_dots_stencil)
+                mask = mask | random_dots_mask
 
         mask = Image.fromarray(255-mask.astype(np.uint8)*255, mode='L')
 
-        # plt.figure('Stencil')
-        # plt.subplot(1, 3, 1)
-        # plt.imshow(stencil)
-        # plt.subplot(1, 3, 2)
-        # plt.imshow(random_path)
-        # plt.subplot(1, 3, 3)
-        # plt.imshow(mask)
-        # plt.show()
-        # exit(1)
+        if False:
+            plt.figure('Stencil')
+            plt.subplot(1, 3, 1)
+            plt.imshow(stencil)
+            plt.subplot(1, 3, 2)
+            plt.imshow(random_path)
+            plt.subplot(1, 3, 3)
+            plt.imshow(mask)
+            plt.show()
+            exit(1)
 
         file_name = os.path.join(args.out_folder, file_format_string.format(i))
         mask.save(file_name)
