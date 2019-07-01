@@ -242,12 +242,12 @@ def main():
             random_dots = generate_random_dots(args.out_size[0], args.out_size[1])
             random_dots_stencil = generate_random_stencil(min(args.out_size)//20)
             random_dots_mask = morphology.binary_dilation(random_dots, structure=random_dots_stencil)
-            mask = mask | random_dots_mask
+            mask = np.logical_xor(mask, random_dots_mask)
             if random.choice((True, False)):
                 random_dots = generate_random_dots(args.out_size[0], args.out_size[1])
                 random_dots_stencil = generate_random_stencil(min(args.out_size)//200)
                 random_dots_mask = morphology.binary_dilation(random_dots, structure=random_dots_stencil)
-                mask = mask | random_dots_mask
+                mask = np.logical_xor(mask, random_dots_mask)
 
         mask = Image.fromarray(255-mask.astype(np.uint8)*255, mode='L')
 
