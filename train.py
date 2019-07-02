@@ -30,6 +30,7 @@ def main():
     parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument("--fine_tune", action="store_true")
     parser.add_argument("--no_dropout", action="store_true")
+    parser.add_argument("--ngf", type=int, default=128)
     parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("--log_interval", type=int, default=1000)
     parser.add_argument("--save_interval", type=int, default=5000)
@@ -46,7 +47,8 @@ def main():
     model = Models.PConvInfilNet(model_save_path,
                                  load_weights=net_name,
                                  fine_tune=args.fine_tune,
-                                 use_dropout=not args.no_dropout)
+                                 use_dropout=not args.no_dropout,
+                                 ngf=args.ngf)
 
     # Open Datasets
     train_dataset = DataLoaders.MaskedImageDataset(args.img_path, mask_path=args.mask_path)

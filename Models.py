@@ -196,7 +196,7 @@ def endless_iterator(generator):
 
 class PConvInfilNet:
 
-    def __init__(self, model_save_path, load_weights='best', fine_tune=False, use_dropout=True):
+    def __init__(self, model_save_path, load_weights='best', fine_tune=False, use_dropout=True, ngf=128):
 
         self.model_save_path = model_save_path
         self.iteration = 0
@@ -214,10 +214,10 @@ class PConvInfilNet:
 
         if load_weights:
             state_dict = self._load_params(load_weights)
-            self.model = init_net(UnetGenerator(3, 3, num_downs=8, ngf=128, fine_tune=fine_tune, use_dropout=use_dropout,
+            self.model = init_net(UnetGenerator(3, 3, num_downs=8, ngf=ngf, fine_tune=fine_tune, use_dropout=use_dropout,
                                                 parameter_values=state_dict), init_type=None)
         else:
-            self.model = init_net(UnetGenerator(3, 3, num_downs=8, ngf=128, fine_tune=fine_tune, use_dropout=use_dropout),
+            self.model = init_net(UnetGenerator(3, 3, num_downs=8, ngf=ngf, fine_tune=fine_tune, use_dropout=use_dropout),
                                                 init_type='kaiming')
 
     def _load_params(self, network_type):
