@@ -61,10 +61,19 @@ class PartialTanh(nn.Tanh):
         return x_out, mask
 
 
+class PartialDropout(nn.Dropout):
+    def __init__(self, *args, **kwargs):
+        super(PartialDropout, self).__init__(*args, **kwargs)
+
+    def forward(self, x_in, mask):
+        x_out = super(PartialDropout, self).forward(x_in)
+        return x_out, mask
+
+
 class UnetGenerator(nn.Module):
     """Create a Unet-based generator"""
 
-    def __init__(self, input_nc, output_nc, num_downs=8, ngf=64, fine_tune=False, parameter_values=None):
+    def __init__(self, input_nc, output_nc, num_downs=8, ngf=64, fine_tune=False, parameter_values=None, use_dropout=False):
         """Construct a Unet generator
         Parameters:
             input_nc (int)  -- the number of channels in input images
@@ -79,11 +88,11 @@ class UnetGenerator(nn.Module):
         # construct unet structure
         unet_block = UnetSkipConnectionBlock(ngf * 8, ngf * 8, submodule=None, innermost=True, fine_tune=fine_tune)  # add the innermost layer
         for i in range(num_downs - 5):          # add intermediate layers with ngf * 8 filters
-            unet_block = UnetSkipConnectionBlock(ngf * 8, ngf * 8, submodule=unet_block, fine_tune=fine_tune)
+            unet_block = UnetSkipConnectionBlock(ngf * 8, ngf * 8, submodule=unet_block, fine_tune=fine_tune, use_dropout=use_dropout)
         # gradually reduce the number of filters from ngf * 8 to ngf
-        unet_block = UnetSkipConnectionBlock(ngf * 4, ngf * 8, submodule=unet_block, fine_tune=fine_tune)
-        unet_block = UnetSkipConnectionBlock(ngf * 2, ngf * 4, submodule=unet_block, fine_tune=fine_tune)
-        unet_block = UnetSkipConnectionBlock(ngf, ngf * 2, submodule=unet_block, fine_tune=fine_tune)
+        unet_block = UnetSkipConnectionBlock(ngf * 4, ngf * 8, submodule=unet_block, fine_tune=fine_tune, use_dropout=use_dropout)
+        unet_block = UnetSkipConnectionBlock(ngf * 2, ngf * 4, submodule=unet_block, fine_tune=fine_tune, use_dropout=use_dropout)
+        unet_block = UnetSkipConnectionBlock(ngf, ngf * 2, submodule=unet_block, fine_tune=fine_tune, use_dropout=use_dropout)
         self.model = UnetSkipConnectionBlock(output_nc, ngf, submodule=unet_block, outermost=True, fine_tune=fine_tune)  # add the outermost layer
 
         if parameter_values:
@@ -98,7 +107,7 @@ class UnetGenerator(nn.Module):
 
 class UnetSkipConnectionBlock(nn.Module):
 
-    def __init__(self, outer_nc, inner_nc, input_nc=None, submodule=None, outermost=False, innermost=False, fine_tune=False):
+    def __init__(self, outer_nc, inner_nc, input_nc=None, submodule=None, outermost=False, innermost=False, fine_tune=False, use_dropout=False):
         super(UnetSkipConnectionBlock, self).__init__()
         self.outermost = outermost
 
@@ -145,6 +154,8 @@ class UnetSkipConnectionBlock(nn.Module):
             down = [PartialLeakyRelu(), downconv, down_norm]
             up = [uprelu, upconv, PartialNorm(outer_nc)]
             model = down + [submodule] + up
+            if use_dropout:
+                model += [PartialDropout(0.5)]
 
         self.model = nn.Sequential(*model)
 
@@ -185,7 +196,7 @@ def endless_iterator(generator):
 
 class PConvInfilNet:
 
-    def __init__(self, model_save_path, load_weights='best', fine_tune=False):
+    def __init__(self, model_save_path, load_weights='best', fine_tune=False, use_dropout=True):
 
         self.model_save_path = model_save_path
         self.iteration = 0
@@ -203,10 +214,11 @@ class PConvInfilNet:
 
         if load_weights:
             state_dict = self._load_params(load_weights)
-            self.model = init_net(UnetGenerator(3, 3, num_downs=8, ngf=64, fine_tune=fine_tune,
+            self.model = init_net(UnetGenerator(3, 3, num_downs=8, ngf=128, fine_tune=fine_tune, use_dropout=use_dropout,
                                                 parameter_values=state_dict), init_type=None)
         else:
-            self.model = init_net(UnetGenerator(3, 3, num_downs=8, ngf=64, fine_tune=fine_tune), init_type='kaiming')
+            self.model = init_net(UnetGenerator(3, 3, num_downs=8, ngf=128, fine_tune=fine_tune, use_dropout=use_dropout),
+                                                init_type='kaiming')
 
     def _load_params(self, network_type):
         print('Loading model from \'' + network_type + '\' ...')
