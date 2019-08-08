@@ -6,7 +6,7 @@ import random
 import math
 
 import numpy as np
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 from PIL import Image, ImageDraw
 from scipy.ndimage import morphology
@@ -156,7 +156,7 @@ class NBodySim:
 
 def generate_random_stencil(max_radius):
 
-    line_radius = random.randint(2, max_radius)
+    line_radius = random.randint(1, max_radius)
     stencil_type = random.choice(('square', 'circle', 'diamond'))
 
     stencil = np.ones((2*line_radius+1, 2*line_radius+1), dtype=np.uint8)
@@ -166,7 +166,7 @@ def generate_random_stencil(max_radius):
             p_y = (y - line_radius) / line_radius
             for x in range(stencil.shape[1]):
                 p_x = (x - line_radius) / line_radius
-                if p_x*p_x+p_y*p_y > 1:
+                if p_x*p_x+p_y*p_y >= 1:
                     stencil[y, x] = 0
 
     elif stencil_type == 'diamond':
@@ -174,7 +174,7 @@ def generate_random_stencil(max_radius):
             p_y = (y - line_radius) / line_radius
             for x in range(stencil.shape[1]):
                 p_x = (x - line_radius) / line_radius
-                if abs(abs(p_x) + abs(p_y)) > 1:
+                if abs(abs(p_x) + abs(p_y)) >= 1:
                     stencil[y, x] = 0
 
     return stencil
@@ -205,6 +205,19 @@ def generate_random_paths(size_x, size_y):
             yield img
 
 
+def generate_random_dots(size_x, size_y):
+    img = Image.new('1', size=(size_x, size_y), color=0)
+    pixels = img.load()
+
+    num_dots = random.randint(1, size_x*size_y // 2000)
+    for _ in range(num_dots):
+        x = random.randrange(size_x)
+        y = random.randrange(size_y)
+        pixels[x, y] = 1
+
+    return img
+
+
 def main():
     parser = argparse.ArgumentParser(description='Creates a number of masks.')
     parser.add_argument('--out-folder', default=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'generated'),
@@ -225,16 +238,29 @@ def main():
         stencil = generate_random_stencil(min(args.out_size)//20)
         random_path = next(random_path_gen)
         mask = morphology.binary_dilation(random_path, structure=stencil)
+        if random.choice((True, False)):
+            random_dots = generate_random_dots(args.out_size[0], args.out_size[1])
+            random_dots_stencil = generate_random_stencil(min(args.out_size)//20)
+            random_dots_mask = morphology.binary_dilation(random_dots, structure=random_dots_stencil)
+            mask = np.logical_xor(mask, random_dots_mask)
+            if random.choice((True, False)):
+                random_dots = generate_random_dots(args.out_size[0], args.out_size[1])
+                random_dots_stencil = generate_random_stencil(min(args.out_size)//200)
+                random_dots_mask = morphology.binary_dilation(random_dots, structure=random_dots_stencil)
+                mask = np.logical_xor(mask, random_dots_mask)
+
         mask = Image.fromarray(255-mask.astype(np.uint8)*255, mode='L')
 
-        # plt.figure('Stencil')
-        # plt.subplot(1, 3, 1)
-        # plt.imshow(stencil)
-        # plt.subplot(1, 3, 2)
-        # plt.imshow(random_path)
-        # plt.subplot(1, 3, 3)
-        # plt.imshow(mask)
-        # plt.show()
+        if False:
+            plt.figure('Stencil')
+            plt.subplot(1, 3, 1)
+            plt.imshow(stencil)
+            plt.subplot(1, 3, 2)
+            plt.imshow(random_path)
+            plt.subplot(1, 3, 3)
+            plt.imshow(mask)
+            plt.show()
+            exit(1)
 
         file_name = os.path.join(args.out_folder, file_format_string.format(i))
         mask.save(file_name)
