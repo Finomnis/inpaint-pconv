@@ -16,6 +16,10 @@ class MaskedImageDataset(Dataset):
     mean = [0.485, 0.456, 0.406]
     stddev = [0.229, 0.224, 0.225]
 
+    img_transform = transforms.Compose([transforms.ToTensor(),
+                                        transforms.Normalize(mean, stddev)])
+    mask_transform = transforms.ToTensor()
+
     @staticmethod
     def unnormalize(x, is_mask=False):
         x = x.detach().cpu()
@@ -29,6 +33,12 @@ class MaskedImageDataset(Dataset):
         x = x.detach().numpy()
         x = (x*255).round().clip(0, 255).astype(np.uint8)
         return x
+
+    @staticmethod
+    def single_image_prepare(img, mask):
+        img_prepared = MaskedImageDataset.img_transform(img).unsqueeze(0)
+        mask_prepared = MaskedImageDataset.mask_transform(mask).unsqueeze(0)
+        return img_prepared, mask_prepared
 
     @staticmethod
     def to_img(x, is_mask=False):
@@ -50,9 +60,6 @@ class MaskedImageDataset(Dataset):
         self.masks = glob.glob(os.path.join(mask_path, '**/*.png'), recursive=True)
         print("   ... opened " + str(len(self.imgs)) + " images with " + str(len(self.masks)) + " masks.")
 
-        self.img_transform = transforms.Compose([transforms.ToTensor(),
-                                                 transforms.Normalize(MaskedImageDataset.mean, MaskedImageDataset.stddev)])
-        self.mask_transform = transforms.ToTensor()
         self.random_mask_flips = transforms.Compose([
             transforms.RandomVerticalFlip(),
             transforms.RandomHorizontalFlip()

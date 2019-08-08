@@ -1,7 +1,7 @@
 import os
 import time
 
-import DataLoaders
+from . import DataLoaders
 
 html_file = """
 <!DOCTYPE html><head><title>Training</title></head><body>

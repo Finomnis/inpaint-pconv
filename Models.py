@@ -1,18 +1,15 @@
 
+from .ext.partialconv.models.partialconv2d import PartialConv2d
+from .ext.partialconvtranspose2d import PartialConvTranspose2d
+from .utils.add_path import add_path
+from . import Logger
+
 from torch import nn
 import torch
 
-from ext.partialconv.models.partialconv2d import PartialConv2d
-from ext.partialconvtranspose2d import PartialConvTranspose2d
-
 import warnings
 import os
-import datetime
 import time
-
-from utils.add_path import add_path
-
-import Logger
 
 with add_path(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ext', 'pix2pix')):
     from models.networks import init_weights
@@ -334,3 +331,7 @@ class PConvInfilNet:
 
     def forward(self, img, mask):
         return self.model(img, mask)
+
+    def forward_test(self, img, mask):
+        with torch.no_grad():
+            return self.model(img, mask)
